@@ -1,0 +1,15 @@
+packages:
+  - "apps/*"
+  - "backend"
+# Scripts de postinstall que necesitamos permitir (pnpm 10+).
+allowBuilds:
+  '@nestjs/core': true
+  '@scarf/scarf': false
+  msgpackr-extract: true
+  sharp: true
+  unrs-resolver: true
+# Policy de supply-chain desactivada: en este proyecto confiamos en las deps
+# oficiales que subimos puntuales (Next.js al salir). Si lo necesitas más
+# estricto, pon un número de segundos y los paquetes recién publicados
+# se bloquearán hasta cumplir esa antigüedad.
+minimumReleaseAge: 0

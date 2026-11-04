@@ -1,0 +1,53 @@
+name: ARShop CI — Typecheck, Tests & Build
+
+on:
+  push:
+    branches: ["main", "master", "develop"]
+  pull_request:
+    branches: ["main", "master", "develop"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-and-tests:
+    name: Backend & Frontend Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Backend — TypeScript Typecheck
+        run: pnpm --filter @arshop/api typecheck
+
+      - name: Backend — Unit & E2E Tests (Jest + Supertest)
+        run: pnpm --filter @arshop/api test
+
+      - name: Backend — Production Build
+        run: pnpm --filter @arshop/api build
+
+      - name: Frontend — TypeScript Typecheck
+        run: pnpm --filter @arshop/web exec tsc --noEmit
+
+      - name: Frontend — Next.js Production Build
+        env:
+          NEXT_PUBLIC_SITE_URL: https://arshop.co
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+          BACKEND_URL: http://localhost:4000
+        run: pnpm --filter @arshop/web build
