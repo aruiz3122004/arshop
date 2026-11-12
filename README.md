@@ -6,6 +6,11 @@ Plataforma full-stack de comercio electrónico y logística de última milla par
 
 **Estado:** portafolio funcional end-to-end. Backend NestJS 10, frontend Next.js 16, Supabase/PostgreSQL, Stripe, Redis/BullMQ, Resend y facturación DIAN en modo demostración. La suite actual tiene **19 suites y 90 pruebas** (unitarias + E2E HTTP).
 
+> [!IMPORTANT]
+> **Cambio planificado — parche v1.1: se retiran Redis y BullMQ.**
+> La versión actual (v1.0) todavía los usa para colas de correo, indexación de catálogo y caché compartida. En **v1.1** se eliminan por completo porque generaban **consultas innecesarias** (casi todas terminaban cayendo al fallback) y **superaban el límite de peticiones gratuitas** del proveedor de Redis. Detalle y alcance en [Cambios planificados: retiro de Redis y BullMQ](#cambios-planificados--v11-retiro-de-redis-y-bullmq).
+
+
 ---
 
 ## Inicio rápido
@@ -364,7 +369,7 @@ La emisión es idempotente: `unique(order_id)`, reutilización del número en re
 
 ## Resiliencia e infraestructura
 
-- **Redis con fallback en memoria**: [`RedisService`](./backend/src/redis/redis.service.ts) mantiene un caché interno y conmuta a memoria si Redis está apagado, no está listo o excede cuota. Usa `enableOfflineQueue: false` para no acumular comandos cuando la conexión está caída.
+- **Redis con fallback en memoria** *(se retira en v1.1, ver [cambios planificados](#cambios-planificados--v11-retiro-de-redis-y-bullmq))*: [`RedisService`](./backend/src/redis/redis.service.ts) mantiene un caché interno y conmuta a memoria si Redis está apagado, no está listo o excede cuota. Usa `enableOfflineQueue: false` para no acumular comandos cuando la conexión está caída.
 - **Colas con envío directo**: los procesadores ([`email.processor.ts`](./backend/src/modules/notifications/processors/email.processor.ts), [`delivery-day.processor.ts`](./backend/src/modules/notifications/processors/delivery-day.processor.ts), [`catalog-sync.processor.ts`](./backend/src/modules/search/catalog-sync.processor.ts)) usan `autorun: process.env.NODE_ENV === "production"`. En producción encolan con timeout de 1,5 s; si Redis no responde, el correo se envía directo por Resend y la indexación corre inline. En desarrollo nunca hace falta Redis para probar esos flujos.
 - **Correos verificados (Cloudflare + Resend)**: subdominio firmado `arshop.arc03.online` con DKIM, SPF y DMARC en modo *DNS Only*. Detalle en [`docs/EMAILS.md`](./docs/EMAILS.md).
 - **Arranque en frío del backend (Render free)**: el plan gratuito duerme la instancia a los 15 min y tarda 20-50 s en despertar. Una cookie testigo, el último perfil cacheado y un `GET /health` disparado durante el parseo del HTML resuelven la vista al instante; un cron de GitHub Actions mantiene la instancia caliente. Detalle en [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md).
@@ -610,6 +615,44 @@ El despliegue actual corre **100 % en capas gratuitas**. Funciona para portafoli
 **Disparadores para subir de fase:** p95 del checkout > 800 ms, CPU de Postgres > 70 % sostenido, más de 100 jobs pendientes en BullMQ, 5xx > 0,5 %, cold start > 2 s, más de 3.000 correos/mes o el primer cliente real cobrando.
 
 **Lo que deliberadamente no se haría todavía:** microservicios, Kubernetes y Kafka. Un monolito modular NestJS + un worker es la arquitectura correcta antes de tener equipos separados; partir el dominio antes sólo agrega latencia y costo operativo.
+
+---
+
+## Cambios planificados — v1.1: retiro de Redis y BullMQ
+
+**Estado:** aprobado para el parche **v1.1**. La v1.0 (actual) sigue funcionando con Redis y BullMQ; el retiro se hará en la próxima entrega.
+
+### Por qué se retiran
+
+1. **Consultas innecesarias.** `RedisService` escribe siempre en memoria y sólo usa Redis como copia adicional; si Redis está lento, caído o sin cupo, la lectura cae al `Map` local. En la práctica, cada operación hacía hasta dos escrituras (memoria + Redis) y generaba comandos que nunca se aprovechaban.
+2. **Límite de peticiones gratuitas excedido.** El plan free del Redis administrado (Upstash/Render Key Value) topó su cuota de comandos/almacenamiento. Al agotarse, Redis empieza a rechazar o limitar comandos, la aplicación entra en el fallback y queda un servicio encendido que ya no aporta nada, pero sí consume tiempo de conexión y cuota.
+3. **Costo y complejidad sin beneficio inmediato.** El despliegue corre en **una sola instancia** de Render. El estado compartido (lockout, MFA, idempotencia, nonces QR, caché de tasas) no necesita salir del proceso; un `Map` en memoria ofrece la misma semántica mientras no haya varias réplicas.
+4. **Fragilidad en el arranque.** La conexión de BullMQ/ioredis fue la causa del crash de producción (`Stream isn't writeable and enableOfflineQueue options is false`) y de arranques que se quedaban esperando a que Redis respondiera. Ya se corrigió en v1.0 con la cola offline + timeouts, pero la dependencia sigue siendo un punto de fallo evitable.
+5. **Latencia extra en rutas críticas.** Cada `queue.add` en producción esperaba hasta 1,5-3 s antes de caer al envío directo. Sin cola, el correo y la indexación ocurren de inmediato.
+6. **Menos superficie de infraestructura.** Quitar Redis elimina el contenedor/servicio, las variables `REDIS_*`, el health check asociado y una dependencia más que documentar y aprovisionar.
+
+### Qué cambia en v1.1
+
+| Área | v1.0 (actual) | v1.1 |
+|---|---|---|
+| Caché y locks (lockout, MFA, refresh, nonces QR, idempotencia) | `RedisService` con Redis + fallback a `Map` | `Map` en memoria con la misma interfaz pública |
+| Correos transaccionales | Cola BullMQ, con envío directo por Resend si Redis falla | Envío directo por Resend desde el servicio de notificaciones |
+| Indexación de catálogo | Cola BullMQ, con indexación inline si Redis falla | Indexación inline al guardar el producto |
+| Barrido diario de entregas (00:00 America/Bogota) | Job repetible de BullMQ | `@Cron` de `@nestjs/schedule` (ya instalado) |
+| Dependencias | `bullmq`, `ioredis`, `@nestjs/bullmq` | Sin ninguna de las tres |
+| Infraestructura | Servicio Redis local (Docker) y en producción | Sin servicio Redis |
+| Variables de entorno | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_TLS` | Eliminadas |
+
+### Alcance y limitaciones asumidas
+
+- **Una sola instancia:** el estado en memoria es consistente mientras Render mantenga una réplica. Si en el futuro se escala horizontalmente, habrá que volver a un almacén distribuido (Upstash, Postgres con `pg_advisory_lock` o una tabla de idempotencia).
+- **Reinicios:** lockouts, sesiones MFA pendientes, deduplicación de recuperación y nonces QR se reinician con el proceso. Es aceptable para el modo portafolio y para el tráfico actual; no cambia ninguna regla de negocio.
+- **Correos:** se pierde el reintento automático de BullMQ. El envío directo conserva `try/catch`, logging y el modo sandbox de Resend.
+- **Sin cambios de contrato:** endpoints, DTOs, base de datos y flujo de checkout quedan iguales; sólo cambia la infraestructura interna.
+
+### Mientras tanto (v1.0)
+
+El deploy actual **funciona con Redis y BullMQ**, y también sin ellos: la conexión ya no tumba el proceso y las llamadas a las colas tienen timeout con fallback. Puedes desplegar tal cual está hoy y planear el retiro para v1.1 sin bloquear el release.
 
 ---
 
