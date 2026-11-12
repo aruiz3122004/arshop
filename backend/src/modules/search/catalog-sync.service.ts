@@ -4,6 +4,7 @@ import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
 import { SupabaseService } from "../../supabase/supabase.service";
 import type { CatalogSyncProcessor } from "./catalog-sync.processor";
+import { withTimeout } from "../../common/utils/with-timeout";
 
 export const CATALOG_SYNC_QUEUE = "catalog-search-sync";
 
@@ -29,12 +30,16 @@ export class CatalogSyncService {
     const jobData: CatalogSyncJob = { type: "sync-product", productId, action };
     if (process.env.NODE_ENV === "production") {
       try {
-        await this.queue.add("sync-product", jobData, {
-          attempts: 3,
-          backoff: { type: "exponential", delay: 1000 },
-          removeOnComplete: 100,
-          removeOnFail: 500,
-        });
+        await withTimeout(
+          this.queue.add("sync-product", jobData, {
+            attempts: 3,
+            backoff: { type: "exponential", delay: 1000 },
+            removeOnComplete: 100,
+            removeOnFail: 500,
+          }),
+          1500,
+          "add(sync-product)",
+        );
         return;
       } catch (err: any) {
         this.logger.warn(`BullMQ no disponible para sync de producto ${productId}, ejecutando en directo.`);
@@ -83,18 +88,22 @@ export class CatalogSyncService {
    */
   async enqueueFullReindex() {
     try {
-      await this.queue.add(
-        "full-reindex",
-        { type: "full-reindex" },
-        {
-          jobId: "catalog-full-reindex",
-          attempts: 2,
-          removeOnComplete: true,
-        },
+      await withTimeout(
+        this.queue.add(
+          "full-reindex",
+          { type: "full-reindex" },
+          {
+            jobId: "catalog-full-reindex",
+            attempts: 2,
+            removeOnComplete: true,
+          },
+        ),
+        3000,
+        "add(full-reindex)",
       );
       this.logger.log("Job de reindexación total encolado en segundo plano.");
     } catch (err: any) {
-      this.logger.error(`Error encolando reindexación total: ${err?.message}`);
+      this.logger.warn(`No se pudo encolar reindexación total: ${err?.message}`);
     }
   }
 }

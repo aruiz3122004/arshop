@@ -3,6 +3,7 @@ import { ModuleRef } from "@nestjs/core";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import type { EmailProcessor } from "./processors/email.processor";
+import { withTimeout } from "../../common/utils/with-timeout";
 
 export const EMAIL_QUEUE = "email";
 export const DELIVERY_DAY_QUEUE = "delivery-day";
@@ -97,18 +98,26 @@ export class NotificationsService {
   async ensureDailyScan() {
     try {
       const name = "delivery-day-scan";
-      const repeatables = await this.deliveryDayQueue.getRepeatableJobs();
+      const repeatables = await withTimeout(
+        this.deliveryDayQueue.getRepeatableJobs(),
+        3000,
+        "getRepeatableJobs(delivery-day)",
+      );
       const exists = repeatables.find((j) => j.name === name);
       if (exists) return;
 
-      await this.deliveryDayQueue.add(
-        name,
-        { type: "scan" },
-        {
-          repeat: { pattern: "0 0 * * *", tz: "America/Bogota" },
-          removeOnComplete: true,
-          removeOnFail: 10,
-        },
+      await withTimeout(
+        this.deliveryDayQueue.add(
+          name,
+          { type: "scan" },
+          {
+            repeat: { pattern: "0 0 * * *", tz: "America/Bogota" },
+            removeOnComplete: true,
+            removeOnFail: 10,
+          },
+        ),
+        3000,
+        "add(delivery-day-scan)",
       );
       this.logger.log("Cron delivery-day-scan registrado (00:00 America/Bogota).");
     } catch (err: any) {
