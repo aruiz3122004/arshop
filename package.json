@@ -1,0 +1,18 @@
+{
+  "name": "arshop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @arshop/web dev",
+    "dev:web": "pnpm --filter @arshop/web dev",
+    "dev:backend": "pnpm --filter @arshop/api dev",
+    "docker:redis": "node scripts/start-docker-redis.mjs",
+    "dev:all": "node scripts/start-docker-redis.mjs && pnpm --parallel --filter @arshop/web --filter @arshop/api dev",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @arshop/web start"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.1.3"
+}

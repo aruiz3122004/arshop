@@ -1,0 +1,33 @@
+# Dependencias y artefactos — se reinstalan dentro del contenedor
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+
+# Secretos — NUNCA deben entrar a la imagen
+**/.env
+**/.env.*
+!**/.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# Git y CI
+.git
+.github
+
+# Logs y caché
+**/*.log
+.cache
+coverage
+
+# Docs & workspace meta no necesaria en runtime
+docs
+*.md
+!README.md
+
+# Lockfile de npm — ya borrado, pero por si vuelve
+package-lock.json

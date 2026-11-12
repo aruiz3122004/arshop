@@ -1,0 +1,52 @@
+name: Backend keep-alive (Render free)
+
+# El plan gratuito de Render duerme la instancia a los ~15 min sin tráfico y
+# la primera request paga 20-50s de arranque. Este cron la mantiene caliente
+# pegándole a `GET /health` (ruta pública, sin DB) cada 10 minutos.
+#
+# Configuración (una sola vez):
+#   Settings → Secrets and variables → Actions → Variables
+#   Nombre: BACKEND_HEALTH_URL
+#   Valor:  https://<tu-servicio>.onrender.com/health
+#
+# Si la variable no existe, el job termina sin error (no rompe el CI).
+
+on:
+  schedule:
+    # GitHub usa UTC y puede retrasar el cron unos minutos bajo carga.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+# Evita solapar pings si uno queda colgado despertando la instancia.
+concurrency:
+  group: backend-keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping /health
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Wake backend
+        env:
+          HEALTH_URL: ${{ vars.BACKEND_HEALTH_URL }}
+        run: |
+          if [ -z "$HEALTH_URL" ]; then
+            echo "::warning::BACKEND_HEALTH_URL no está configurado; se omite el ping."
+            exit 0
+          fi
+
+          # 2 intentos: el primero puede toparse con el arranque (hasta 60s).
+          for attempt in 1 2; do
+            echo "Intento $attempt → $HEALTH_URL"
+            if curl -fsS --max-time 90 "$HEALTH_URL"; then
+              echo ""
+              echo "OK: backend despierto."
+              exit 0
+            fi
+            sleep 15
+          done
+
+          echo "::warning::El backend no respondió a tiempo (cold start o deploy en curso)."

@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARShop — Mapa Interactivo de Arquitectura, Decisiones Técnicas y Stack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --carbon: #181818;
+      --paper: #ffffff;
+      --stone: #f5f5f4;
+      --smoke: #e4e4e2;
+      --graphite: #686868;
+      --accent-emerald: #0f766e;
+      --accent-indigo: #1d4ed8;
+      --accent-amber: #b45309;
+      --accent-purple: #6d28d9;
+      --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-serif: "Cormorant Garamond", Georgia, serif;
+      --font-mono: "JetBrains Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--paper);
+      color: var(--carbon);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ───── Topbar ───── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--carbon);
+    }
+
+    .topbar-inner {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+    }
+
+    .brand {
+      font-family: var(--font-serif);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--graphite);
+      border-left: 1px solid var(--smoke);
+      padding-left: 14px;
+    }
+
+    .view-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .view-tab {
+      border: 1px solid var(--smoke);
+      background: var(--paper);
+      color: var(--carbon);
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .view-tab:hover {
+      border-color: var(--carbon);
+    }
+
+    .view-tab.active {
+      background: var(--carbon);
+      color: var(--paper);
+      border-color: var(--carbon);
+    }
+
+    /* ───── Main Container ───── */
+    .container {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    .hero {
+      border-bottom: 1px solid var(--smoke);
+      padding-bottom: 24px;
+      margin-bottom: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 20px;
+    }
+
+    .hero h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(30px, 4vw, 44px);
+      font-weight: 600;
+      line-height: 1.1;
+      margin-top: 6px;
+    }
+
+    .hero-kicker {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--graphite);
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill {
+      border: 1px solid var(--smoke);
+      background: var(--stone);
+      padding: 8px 14px;
+    }
+
+    .stat-pill .num {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+      display: block;
+    }
+
+    .stat-pill .lbl {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--graphite);
+    }
+
+    /* ───── Sections Visibility ───── */
+    .view-section {
+      display: none;
+    }
+
+    .view-section.active {
+      display: block;
+    }
+
+    /* ───── Filter Bar ───── */
+    .layer-filters {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    .filter-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--graphite);
+      margin-right: 6px;
+    }
+
+    .layer-btn {
+      border: 1px solid var(--smoke);
+      background: var(--paper);
+      padding: 6px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .layer-btn:hover {
+      border-color: var(--carbon);
+    }
+
+    .layer-btn.active {
+      background: var(--carbon);
+      color: var(--paper);
+      border-color: var(--carbon);
+    }
+
+    /* ───── Interactive Map Grid (Left: Canvas, Right: Inspector) ───── */
+    .map-workspace {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .map-workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .architecture-board {
+      border: 1px solid var(--carbon);
+      background:
+        radial-gradient(circle, #d6d6d2 1px, transparent 1px) 0 0 / 20px 20px,
+        #fafaf9;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .tier-box {
+      border: 1px solid var(--smoke);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 16px;
+      position: relative;
+    }
+
+    .tier-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--smoke);
+      padding-bottom: 6px;
+    }
+
+    .tier-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--carbon);
+    }
+
+    .tier-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--graphite);
+    }
+
+    .nodes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+      gap: 12px;
+    }
+
+    .arch-node {
+      border: 1.5px solid var(--smoke);
+      background: var(--paper);
+      padding: 13px 14px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      position: relative;
+      text-align: left;
+    }
+
+    .arch-node:hover {
+      border-color: var(--carbon);
+      transform: translateY(-2px);
+    }
+
+    .arch-node.selected {
+      border-color: var(--carbon);
+      background: var(--carbon);
+      color: var(--paper);
+    }
+
+    .arch-node.selected .node-sub,
+    .arch-node.selected .node-tech {
+      color: #d4d4d4;
+    }
+
+    .arch-node.selected .node-chip {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--paper);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .arch-node.connected {
+      border-color: var(--carbon);
+      border-style: dashed;
+      background: #f3f4f6;
+    }
+
+    .arch-node.dimmed {
+      opacity: 0.28;
+    }
+
+    .node-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .node-chip {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 2px 6px;
+      border: 1px solid var(--smoke);
+      background: var(--stone);
+      color: var(--carbon);
+    }
+
+    .node-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .node-sub {
+      font-size: 11.5px;
+      color: var(--graphite);
+      line-height: 1.35;
+    }
+
+    .node-tech {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--graphite);
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(150, 150, 150, 0.2);
+    }
+
+    /* ───── Inspector Panel ───── */
+    .inspector {
+      position: sticky;
+      top: 82px;
+      border: 1.5px solid var(--carbon);
+      background: var(--paper);
+      padding: 24px;
+    }
+
+    .inspector-kicker {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--graphite);
+    }
+
+    .inspector-title {
+      font-family: var(--font-serif);
+      font-size: 28px;
+      font-weight: 600;
+      margin: 4px 0 6px;
+    }
+
+    .inspector-stack {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      background: var(--stone);
+      border: 1px solid var(--smoke);
+      padding: 6px 10px;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+
+    .inspector-desc {
+      font-size: 13.5px;
+      color: #262626;
+      margin-bottom: 18px;
+      line-height: 1.55;
+    }
+
+    .inspector-section {
+      border-top: 1px solid var(--smoke);
+      padding-top: 14px;
+      margin-top: 14px;
+    }
+
+    .inspector-section h4 {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--graphite);
+      margin-bottom: 8px;
+    }
+
+    .inspector-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .inspector-list li {
+      font-size: 12.5px;
+      padding-left: 14px;
+      position: relative;
+      color: #222;
+    }
+
+    .inspector-list li::before {
+      content: "▪";
+      position: absolute;
+      left: 0;
+      color: var(--carbon);
+    }
+
+    .connected-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .conn-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      border: 1px solid var(--carbon);
+      padding: 4px 9px;
+      background: var(--stone);
+      cursor: pointer;
+    }
+
+    .conn-tag:hover {
+      background: var(--carbon);
+      color: var(--paper);
+    }
+
+    .code-snippet {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: #141414;
+      color: #f5f5f5;
+      padding: 12px;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.45;
+    }
+
+    /* ───── Vista 2: Simulador de Flujo Transaccional ───── */
+    .flow-stepper {
+      border: 1px solid var(--carbon);
+      padding: 24px;
+      background: var(--stone);
+    }
+
+    .step-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .step-btn {
+      border: 1px solid var(--smoke);
+      background: var(--paper);
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .step-btn:hover {
+      border-color: var(--carbon);
+    }
+
+    .step-btn.active {
+      background: var(--carbon);
+      color: var(--paper);
+      border-color: var(--carbon);
+    }
+
+    .step-btn .step-num {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      opacity: 0.7;
+      display: block;
+    }
+
+    .step-btn .step-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      margin-top: 2px;
+      display: block;
+    }
+
+    .step-detail-card {
+      border: 1px solid var(--carbon);
+      background: var(--paper);
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .step-detail-card {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ───── Vista 3: Matriz de Decisiones y Stack ───── */
+    .search-input {
+      width: 100%;
+      max-width: 460px;
+      border: 1px solid var(--carbon);
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      background: var(--paper);
+    }
+
+    .decisions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 18px;
+    }
+
+    .decision-card {
+      border: 1px solid var(--smoke);
+      padding: 20px;
+      background: var(--paper);
+      transition: border-color 0.15s;
+    }
+
+    .decision-card:hover {
+      border-color: var(--carbon);
+    }
+
+    .decision-cat {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--graphite);
+    }
+
+    .decision-title {
+      font-family: var(--font-serif);
+      font-size: 22px;
+      font-weight: 600;
+      margin: 4px 0 10px;
+    }
+
+    .decision-body {
+      font-size: 13px;
+      color: #2b2b2b;
+      margin-bottom: 12px;
+    }
+
+    .decision-why {
+      border-top: 1px solid var(--smoke);
+      padding-top: 10px;
+      font-size: 12px;
+      color: var(--graphite);
+    }
+  </style>
+</head>
+<body>
+  <!-- ═════════ TOPBAR ═════════ -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand-group">
+        <span class="brand">ARShop</span>
+        <span class="brand-tag">Architecture & Engineering Blueprint · Interactive Map</span>
+      </div>
+      <div class="view-tabs" role="tablist">
+        <button class="view-tab active" onclick="switchView('map', this)">
+          1. Mapa Interactivo de Arquitectura
+        </button>
+        <button class="view-tab" onclick="switchView('flow', this)">
+          2. Simulador Transaccional (Paso a Paso)
+        </button>
+        <button class="view-tab" onclick="switchView('decisions', this)">
+          3. Decisiones Técnicas, Lógica & Stack
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ═════════ HERO ═════════ -->
+    <section class="hero">
+      <div>
+        <span class="hero-kicker">Plataforma E-Commerce & Logística de Última Milla · Colombia</span>
+        <h1>Mapa de Arquitectura, Integraciones y Decisiones Lógicas</h1>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-pill">
+          <span class="num">Next.js 16 + NestJS 10</span>
+          <span class="lbl">Monorepo Full-Stack</span>
+        </div>
+        <div class="stat-pill">
+          <span class="num">FOR UPDATE + SETNX</span>
+          <span class="lbl">Cero Sobreventa & Idempotencia</span>
+        </div>
+        <div class="stat-pill">
+          <span class="num">QR JWT-lite + Haversine</span>
+          <span class="lbl">Última Milla Verificada</span>
+        </div>
+        <div class="stat-pill">
+          <span class="num">Ley 1480 + DIAN 19%</span>
+          <span class="lbl">Cumplimiento Colombiano</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VISTA 1: MAPA INTERACTIVO DE NODOS Y CAPAS
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section id="view-map" class="view-section active">
+      <div class="layer-filters">
+        <span class="filter-label">Filtrar por capa:</span>
+        <button class="layer-btn active" onclick="filterLayer('ALL', this)">Todas las Capas (12)</button>
+        <button class="layer-btn" onclick="filterLayer('FRONTEND', this)">Frontend & UX</button>
+        <button class="layer-btn" onclick="filterLayer('BACKEND', this)">Backend & Dominio</button>
+        <button class="layer-btn" onclick="filterLayer('DATA', this)">Base de Datos & Redis</button>
+        <button class="layer-btn" onclick="filterLayer('EXTERNAL', this)">Integraciones Externas</button>
+      </div>
+
+      <div class="map-workspace">
+        <!-- Tablero de Nodos por Capas -->
+        <div class="architecture-board">
+          <!-- CAPA 1: FRONTEND -->
+          <div class="tier-box">
+            <div class="tier-header">
+              <span class="tier-title">Capa 1 · Presentación & Experiencia (Next.js 16 App Router · React 19)</span>
+              <span class="tier-badge">apps/web</span>
+            </div>
+            <div class="nodes-grid">
+              <button class="arch-node selected" data-id="next-store" data-layer="FRONTEND" onclick="selectNode('next-store')">
+                <div class="node-top">
+                  <span class="node-chip">Storefront</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">SSR + CSR</span>
+                </div>
+                <div class="node-title">Boutique & Checkout</div>
+                <div class="node-sub">Catálogo editorial, Guía de Tallas, Carrito persistente, Cupones y Comprobante de 1 página.</div>
+                <div class="node-tech">Next.js 16 · Tailwind v4 · Stripe Elements</div>
+              </button>
+
+              <button class="arch-node" data-id="next-portals" data-layer="FRONTEND" onclick="selectNode('next-portals')">
+                <div class="node-top">
+                  <span class="node-chip">Portales RBAC</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">3 Roles</span>
+                </div>
+                <div class="node-title">Admin, Repartidor & Cliente</div>
+                <div class="node-sub">Paneles dedicados (/admin, /domiciliario, /cuenta) con Modo Demo Portafolio 1-Clic y paginación.</div>
+                <div class="node-tech">RBAC Guards · Html5-QRCode · PWA</div>
+              </button>
+
+              <button class="arch-node" data-id="search-engine" data-layer="FRONTEND" onclick="selectNode('search-engine')">
+                <div class="node-top">
+                  <span class="node-chip">Algoritmo</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">O(1) Lookup</span>
+                </div>
+                <div class="node-title">Buscador con Sinónimos CO</div>
+                <div class="node-sub">Índice invertido en memoria con jerga colombiana ("camibuso", "tenis", "chompa") y Levenshtein.</div>
+                <div class="node-tech">IsolatedSearchEngine · Export JSON</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- CAPA 2: BACKEND NESTJS -->
+          <div class="tier-box">
+            <div class="tier-header">
+              <span class="tier-title">Capa 2 · API & Lógica de Dominio (NestJS 10 · TypeScript)</span>
+              <span class="tier-badge">backend/src</span>
+            </div>
+            <div class="nodes-grid">
+              <button class="arch-node" data-id="nest-security" data-layer="BACKEND" onclick="selectNode('nest-security')">
+                <div class="node-top">
+                  <span class="node-chip">Seguridad</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">JWT + MFA</span>
+                </div>
+                <div class="node-title">Auth, Lockout & MFA TOTP</div>
+                <div class="node-sub">Cookies httpOnly, bloqueo anti fuerza bruta en Redis, 2FA TOTP + códigos backup SHA-256.</div>
+                <div class="node-tech">AuthGuard · RolesGuard · Throttler</div>
+              </button>
+
+              <button class="arch-node" data-id="nest-orders" data-layer="BACKEND" onclick="selectNode('nest-orders')">
+                <div class="node-top">
+                  <span class="node-chip">Transaccional</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">Idempotente</span>
+                </div>
+                <div class="node-title">Motor de Órdenes, IVA & RMA</div>
+                <div class="node-sub">Checkout con Idempotency-Key, cálculo IVA 19% DIAN, cancelación pre-envío y retracto Ley 1480.</div>
+                <div class="node-tech">OrdersService · Ley 1480 Art. 47</div>
+              </button>
+
+              <button class="arch-node" data-id="nest-delivery" data-layer="BACKEND" onclick="selectNode('nest-delivery')">
+                <div class="node-top">
+                  <span class="node-chip">Última Milla</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">HMAC + Haversine</span>
+                </div>
+                <div class="node-title">Logística Híbrida & QR</div>
+                <div class="node-sub">Asignación geográfica Haversine, prueba criptográfica QR (jti único), PIN 4 dígitos y disputas.</div>
+                <div class="node-tech">DeliveryService · QrService · Guías</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- CAPA 3: DATOS, CONCURRENCIA & COLAS -->
+          <div class="tier-box">
+            <div class="tier-header">
+              <span class="tier-title">Capa 3 · Persistencia Atómica, Concurrencia & Colas</span>
+              <span class="tier-badge">Supabase PG + Upstash Redis</span>
+            </div>
+            <div class="nodes-grid">
+              <button class="arch-node" data-id="pg-rpcs" data-layer="DATA" onclick="selectNode('pg-rpcs')">
+                <div class="node-top">
+                  <span class="node-chip">PostgreSQL</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">FOR UPDATE</span>
+                </div>
+                <div class="node-title">RPCs Atómicas & Stock Lock</div>
+                <div class="node-sub">Bloqueo pesimista de fila por 15 min en checkout, prevención de overselling y RLS estricto.</div>
+                <div class="node-tech">24 Migraciones SQL · PL/pgSQL</div>
+              </button>
+
+              <button class="arch-node" data-id="redis-idemp" data-layer="DATA" onclick="selectNode('redis-idemp')">
+                <div class="node-top">
+                  <span class="node-chip">Upstash Redis</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">SETNX + TTL</span>
+                </div>
+                <div class="node-title">Idempotencia, Locks & Rate-Limit</div>
+                <div class="node-sub">Deduplicación de órdenes concurrentes, contadores brute-force y locks distribuidos de cronjobs.</div>
+                <div class="node-tech">ioredis · Distributed Locks</div>
+              </button>
+
+              <button class="arch-node" data-id="bullmq-cron" data-layer="DATA" onclick="selectNode('bullmq-cron')">
+                <div class="node-top">
+                  <span class="node-chip">Workers</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">Async Jobs</span>
+                </div>
+                <div class="node-title">BullMQ & Limpieza de Reservas</div>
+                <div class="node-sub">Colas de correo con jobId determinista, liberación de reservas vencidas y auto-confirmación 48h.</div>
+                <div class="node-tech">BullMQ · @nestjs/schedule</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- CAPA 4: INTEGRACIONES EXTERNAS -->
+          <div class="tier-box">
+            <div class="tier-header">
+              <span class="tier-title">Capa 4 · Pasarela Bancaria, Correo Transaccional & Observabilidad</span>
+              <span class="tier-badge">Cloud Integrations</span>
+            </div>
+            <div class="nodes-grid">
+              <button class="arch-node" data-id="stripe-pay" data-layer="EXTERNAL" onclick="selectNode('stripe-pay')">
+                <div class="node-top">
+                  <span class="node-chip">PCI-DSS Nivel 1</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">Webhooks HMAC</span>
+                </div>
+                <div class="node-title">Stripe Payments & Auto-Refund</div>
+                <div class="node-sub">PaymentIntents 3D Secure, validación de firma HMAC y reembolso automático en pago tardío sin stock.</div>
+                <div class="node-tech">Stripe SDK · Zero PAN Storage</div>
+              </button>
+
+              <button class="arch-node" data-id="resend-mail" data-layer="EXTERNAL" onclick="selectNode('resend-mail')">
+                <div class="node-top">
+                  <span class="node-chip">Emails</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">Transactional</span>
+                </div>
+                <div class="node-title">Resend & Alertas Back-in-Stock</div>
+                <div class="node-sub">Correos de confirmación de compra, bienvenida y notificación automática cuando vuelve una talla.</div>
+                <div class="node-tech">Resend API · Plantillas HTML</div>
+              </button>
+
+              <button class="arch-node" data-id="observability" data-layer="EXTERNAL" onclick="selectNode('observability')">
+                <div class="node-top">
+                  <span class="node-chip">Calidad & Logs</span>
+                  <span style="font-family: var(--font-mono); font-size: 11px;">48 Tests + NDJSON</span>
+                </div>
+                <div class="node-title">Pino Logger, SEO & Suite E2E</div>
+                <div class="node-sub">Logs estructurados NDJSON con redacción de secretos, JSON-LD Schema.org y 11 suites Jest/Supertest.</div>
+                <div class="node-tech">PinoJsonLogger · GitHub Actions CI</div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Inspector Lateral -->
+        <aside class="inspector" id="node-inspector">
+          <!-- Renderizado dinámicamente por JS -->
+        </aside>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VISTA 2: SIMULADOR PASO A PASO DEL FLUJO TRANSACCIONAL
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section id="view-flow" class="view-section">
+      <div class="flow-stepper">
+        <div class="step-buttons" id="flow-step-buttons"></div>
+        <div class="step-detail-card" id="flow-step-content"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VISTA 3: MATRIZ DE DECISIONES TÉCNICAS Y LÓGICA
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section id="view-decisions" class="view-section">
+      <input
+        type="search"
+        id="decision-search"
+        class="search-input"
+        placeholder="Filtrar decisiones (ej: FOR UPDATE, Stripe, QR, Haversine, Ley 1480, IVA, sinónimos...)"
+        oninput="renderDecisions(this.value)"
+      />
+      <div class="decisions-grid" id="decisions-container"></div>
+    </section>
+  </main>
+
+  <script>
+    /* ─────────────────── BASE DE CONOCIMIENTO DE NODOS ─────────────────── */
+    const NODES = {
+      "next-store": {
+        kicker: "Capa 1 · Frontend Storefront (apps/web)",
+        title: "Boutique Editorial & Checkout",
+        stack: "Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · Stripe Elements",
+        desc: "Interfaz bajo estética 'White-Cube Gallery' diseñada para minimizar fricción cognitiva y garantizar exactitud en compras de moda sin sede física.",
+        decisions: [
+          "Guía de tallas interactiva en centímetros + etiquetas de calce (Regular, Oversized, Slim) para reducir devoluciones.",
+          "Comprobante de pedido aislado de 1 página (iframe print + @media print) que entrega exclusivamente Estado, Fecha, Receptor, Dirección y Producto Entregado.",
+          "Selector multimoneda en tiempo real (COP / USD / EUR) y páginas editoriales completas (/atencion, /compania#faq, /privacidad).",
+          "Generación automática de clave UUID de idempotencia en el cliente antes de invocar POST /orders."
+        ],
+        connections: ["nest-orders", "search-engine", "stripe-pay"],
+        code: `// Generación de comprobante limpio de 1 página
+handleDownloadReceipt() -> iframe aislado A4
+Campos: Estado | Fecha creación | Receptor | Dirección | Producto entregado`
+      },
+      "next-portals": {
+        kicker: "Capa 1 · Ecosistema Multi-Rol (apps/web)",
+        title: "Portales Admin, Repartidor y Cliente",
+        stack: "React 19 · Html5-QRCode · Paginación de Pedidos · Modo Demo 1-Clic",
+        desc: "Tres experiencias operativas desacopladas dentro del mismo monorepo con protección por rol y aprovisionamiento instantáneo para evaluación.",
+        decisions: [
+          "Paginación en el historial de pedidos del cliente (/cuenta): corta automáticamente en bloques de 10 pedidos por página para evitar scroll infinito.",
+          "Modo Demo Portafolio (Acceso 1-Clic): endpoint /auth/demo-signin que aprovisiona e inicia sesión con cookies httpOnly en Cliente, Admin o Repartidor.",
+          "Panel de Repartidor (/domiciliario) con escáner de cámara QR en vivo, validador de PIN de 4 dígitos y billetera de bonos por kilometraje.",
+          "Panel Admin (/admin) con CRUD de productos, Drops programados, despacho con transportadora nacional y arbitraje de disputas/RMA."
+        ],
+        connections: ["nest-security", "nest-orders", "nest-delivery"],
+        code: `// Paginación automática en /cuenta
+const ORDERS_PER_PAGE = 10;
+orders.slice((ordersPage - 1) * 10, ordersPage * 10);`
+      },
+      "search-engine": {
+        kicker: "Capa 1 & 2 · Motor de Búsqueda Aislado",
+        title: "Índice Invertido con Sinónimos Colombianos",
+        stack: "TypeScript Puro · Tokenización NFD · Distancia Levenshtein <= 2",
+        desc: "Motor de búsqueda en memoria sin dependencias externas que traduce jerga local colombiana a categorías formales del catálogo.",
+        decisions: [
+          "Diccionario bidireccional de regionalismos: 'camibuso' → camiseta/polo, 'tenis'/'zapatillas' → calzado, 'chompa'/'buzo' → abrigos, 'jean' → pantalones.",
+          "Normalización Unicode NFD que elimina tildes y diacríticos antes de indexar y buscar.",
+          "Tolerancia a errores tipográficos (Bounded Levenshtein <= 2) para términos de 4 o más letras.",
+          "Exportación e importación de índice serializado en JSON (GET /products/search-engine/export) para auditoría o hidratación."
+        ],
+        connections: ["next-store", "pg-rpcs"],
+        code: `// Sinónimos colombianos en IsolatedSearchEngine
+camibuso -> ["camiseta", "polo"]
+chompa   -> ["chaqueta", "abrigo", "buzo"]`
+      },
+      "nest-security": {
+        kicker: "Capa 2 · Seguridad & Autenticación (backend/src/modules/auth)",
+        title: "Guardia JWT, Lockout Redis y MFA TOTP",
+        stack: "NestJS 10 · Supabase Auth · Redis Lockout · TOTP + SHA-256 Backup Codes",
+        desc: "Arquitectura de seguridad defensiva en profundidad para proteger sesiones, credenciales y operaciones administrativas.",
+        decisions: [
+          "Cookies httpOnly + SameSite para almacenar access_token y refresh_token fuera del alcance de ataques XSS.",
+          "Protección contra fuerza bruta en login: 5 intentos fallidos bloquean la cuenta por 15 minutos en Redis (HTTP 429).",
+          "Autenticación multifactor (MFA TOTP) con 10 códigos de respaldo de un solo uso hasheados con SHA-256 en mfa_backup_codes.",
+          "RBAC estricto mediante decoradores @Roles('ADMIN', 'REPARTIDOR') validados contra la tabla profiles."
+        ],
+        connections: ["next-portals", "redis-idemp", "pg-rpcs"],
+        code: `// Lockout en Redis tras 5 intentos fallidos
+Key: auth:lockout:{email} -> TTL 900s (15 min)
+Backup Codes -> SHA-256 single-use`
+      },
+      "nest-orders": {
+        kicker: "Capa 2 · Dominio Comercial y Fiscal (backend/src/modules/orders)",
+        title: "Motor de Órdenes, Desglose DIAN y Ley 1480",
+        stack: "NestJS 10 · OrdersService · IVA 19% · Retracto 5 Días Hábiles",
+        desc: "Orquesta el ciclo de vida completo de un pedido desde la reserva de inventario hasta la facturación y devoluciones postventa.",
+        decisions: [
+          "Desglose tributario colombiano (DIAN): calcula subtotal_cop, discount_cop, base gravable sin IVA y tax_cop (IVA 19% incluido).",
+          "Motor de cupones promocionales (BIENVENIDO10, DROP15, ARSHOP30K) con validación de monto mínimo y tope porcentual.",
+          "Cancelación voluntaria pre-envío: si la orden está en PAID y aún no se envió, ejecuta reembolso automático en Stripe + restaura stock.",
+          "Cumplimiento Ley 1480 Art. 47: cálculo exacto de 5 días hábiles (excluyendo sábados y domingos) desde delivered_at para retractos y cambios de talla."
+        ],
+        connections: ["pg-rpcs", "redis-idemp", "stripe-pay", "resend-mail"],
+        code: `// Cálculo tributario DIAN (IVA 19% incluido)
+baseSinIva = Math.round(netItemsCop / 1.19);
+taxCop     = netItemsCop - baseSinIva;`
+      },
+      "nest-delivery": {
+        kicker: "Capa 2 · Logística de Última Milla (backend/src/modules/delivery)",
+        title: "Asignación Haversine & Prueba Criptográfica QR",
+        stack: "JWT-lite HMAC-SHA256 · Fórmula Haversine · PIN Scrypt · Guías Nacionales",
+        desc: "Sistema logístico híbrido que combina flota propia de domiciliarios verificados con despacho por transportadoras nacionales.",
+        decisions: [
+          "Asignación multicapa (assign_delivery): prioriza repartidores activos en la misma ciudad con menor carga (SKIP LOCKED), o asigna al más cercano del departamento usando distancia Haversine con bono por km extra.",
+          "Antifraude en última milla: el repartidor NO puede marcar DELIVERED sin haber consumido antes el token QR firmado (jti único) o validado el código numérico de 4 dígitos.",
+          "Flujo de entrega en portería (Entrega Simulada con PIN scrypt): deja la orden en PENDING_CLIENT por 48h permitiendo al comprador confirmar o abrir disputa.",
+          "Soporte nativo para guías de Servientrega, Coordinadora, Interrapidísimo, TCC y Envía."
+        ],
+        connections: ["next-portals", "pg-rpcs", "redis-idemp"],
+        code: `// Verificación obligatoria antes de DELIVERED
+if (!order.qr_consumed_at) {
+  throw new ForbiddenException("Requiere escanear QR o PIN");
+}`
+      },
+      "pg-rpcs": {
+        kicker: "Capa 3 · Persistencia Transaccional (db/migrations)",
+        title: "Supabase PostgreSQL + RPCs FOR UPDATE",
+        stack: "PostgreSQL 15 · PL/pgSQL · Row Level Security (RLS) · 24 Migraciones",
+        desc: "Todas las operaciones críticas de inventario y órdenes se ejecutan dentro de funciones RPC transaccionales en PostgreSQL para garantizar atomicidad ACID.",
+        decisions: [
+          "reserve_variant_stock: aplica SELECT ... FOR UPDATE sobre las variantes solicitadas, resta reservas activas de otros usuarios y crea un bloqueo de 15 minutos.",
+          "confirm_order_reservation: al llegar el pago de Stripe, descuenta el stock físico de forma atómica. Si la reserva había expirado pero aún hay stock libre, recupera la orden; si se agotó, retorna OUT_OF_STOCK_LATE_PAYMENT.",
+          "Sincronización automática por trigger entre stock de variantes y stock agregado del producto.",
+          "Políticas RLS habilitadas en todas las tablas para aislamiento por rol y propietario."
+        ],
+        connections: ["nest-orders", "nest-delivery", "bullmq-cron"],
+        code: `SELECT stock INTO v_stock FROM product_variants
+WHERE product_id = p_id AND size = p_size
+FOR UPDATE; -- Bloqueo pesimista anti-overselling`
+      },
+      "redis-idemp": {
+        kicker: "Capa 3 · Estado Efímero & Concurrencia (Upstash Redis)",
+        title: "Idempotencia SETNX, Rate-Limit y Locks",
+        stack: "Upstash Redis · ioredis · Atomic SETNX · TTL Caching",
+        desc: "Capa de coordinación distribuida de baja latencia para evitar condiciones de carrera entre múltiples instancias del API.",
+        decisions: [
+          "Idempotencia en POST /orders: guarda idem:order:{userId}:{key} con SETNX. Si llega una petición duplicada en vuelo, hace polling corto hasta devolver la misma orden sin duplicar cobros ni reservas.",
+          "Protección brute-force del código de entrega de 4 dígitos: bloquea por 15 minutos tras 5 intentos fallidos sobre un pedido.",
+          "Lock distribuido (lock:reservations-cleanup) para asegurar que solo una instancia ejecute el cronjob de limpieza cada minuto."
+        ],
+        connections: ["nest-orders", "nest-security", "nest-delivery", "bullmq-cron"],
+        code: `// Idempotencia atómica en Redis
+SET idem:order:{userId}:{key} "IN_PROGRESS" EX 60 NX`
+      },
+      "bullmq-cron": {
+        kicker: "Capa 3 · Procesamiento Asíncrono (BullMQ + Schedule)",
+        title: "Workers de Correo y Limpieza de Reservas TTL",
+        stack: "BullMQ · @nestjs/schedule · ReservationsCleanupService",
+        desc: "Desacopla las tareas pesadas o temporizadas del hilo principal de peticiones HTTP.",
+        decisions: [
+          "Cronjob cada 60 segundos (ReservationsCleanupService): marca como EXPIRED las reservas vencidas (>15 min), cancela las órdenes PENDING_PAYMENT abandonadas y anula sus PaymentIntents en Stripe.",
+          "Auto-confirmación a las 48h (DeliveryAutoConfirmService): cierra entregas en estado PENDING_CLIENT si el comprador no reportó disputa.",
+          "Idempotencia en colas de correo: cada trabajo en BullMQ utiliza un jobId determinista (ej. order-paid-{orderId}) para que reintentos de webhook jamás envíen correos duplicados."
+        ],
+        connections: ["pg-rpcs", "redis-idemp", "stripe-pay", "resend-mail"],
+        code: `// JobId determinista en BullMQ
+queue.add("order-paid", payload, {
+  jobId: \`order-paid-\${orderId}\`
+});`
+      },
+      "stripe-pay": {
+        kicker: "Capa 4 · Infraestructura Bancaria (Stripe)",
+        title: "Stripe PaymentIntents, Webhooks HMAC & Reembolsos",
+        stack: "Stripe Node SDK · Stripe Elements · 3D Secure 2.0 · PCI-DSS Nivel 1",
+        desc: "Procesamiento de pagos con captura aislada en el navegador del cliente y reconciliación asíncrona firmada criptográficamente.",
+        decisions: [
+          "Zero PAN/CVC Storage: los datos de tarjeta viajan directo del navegador a Stripe Elements; ARShop solo opera con PaymentIntent IDs.",
+          "Verificación criptográfica de firma HMAC (stripe-signature) sobre el rawBody en POST /payments/webhook.",
+          "Auto-reembolso de rescate: si un usuario paga un PaymentIntent después de los 15 minutos de su reserva y otro comprador agotó la última unidad, el webhook emite automáticamente stripe.refunds.create()."
+        ],
+        connections: ["next-store", "nest-orders", "bullmq-cron"],
+        code: `// Auto-reembolso en pago tardío sin stock
+if (rpcResult === 'OUT_OF_STOCK_LATE_PAYMENT') {
+  await stripe.refunds.create({ payment_intent: pi.id });
+}`
+      },
+      "resend-mail": {
+        kicker: "Capa 4 · Comunicación Transaccional (Resend)",
+        title: "Notificaciones de Orden y Alertas Back-in-Stock",
+        stack: "Resend API · BullMQ Worker · HTML Editorial Templates",
+        desc: "Servicio de mensajería transaccional disparado por eventos de negocio confirmados.",
+        decisions: [
+          "Envío asíncrono desde BullMQ con reintentos exponenciales (backoff) ante fallos de red.",
+          "Disparo automático de alertas Back-in-Stock (stock_alerts) cuando una orden se cancela, se aprueba una devolución o el administrador repone unidades de una variante agotada."
+        ],
+        connections: ["nest-orders", "bullmq-cron"],
+        code: `// Alerta automática cuando se libera o repone stock
+notifyStockSubscribers(productId, variantSize)`
+      },
+      "observability": {
+        kicker: "Capa 4 · Calidad, SEO & Observabilidad",
+        title: "Logging NDJSON, SEO Schema.org y 48 Tests",
+        stack: "PinoJsonLogger · Jest + Supertest · GitHub Actions · JSON-LD",
+        desc: "Garantiza trazabilidad en producción, indexación en motores de búsqueda y cero regresiones en los flujos críticos.",
+        decisions: [
+          "Logging estructurado JSON (NDJSON) con propagación de x-request-id y redacción automática de contraseñas, tokens y secretos.",
+          "Suite automatizada de 48 tests (11 suites unitarias + E2E HTTP con Supertest) ejecutada en GitHub Actions CI.",
+          "SEO técnico completo: sitemap.ts dinámico, robots.ts, OpenGraph y datos estructurados Schema.org Product (JSON-LD)."
+        ],
+        connections: ["next-store", "nest-orders", "nest-security"],
+        code: `// Formato de log estructurado en producción
+{"level":"info","reqId":"uuid","method":"POST","url":"/api/orders","statusCode":201,"durationMs":42}`
+      }
+    };
+
+    /* ─────────────────── FLUJO PASO A PASO (7 ETAPAS) ─────────────────── */
+    const FLOW_STEPS = [
+      {
+        num: "PASO 01",
+        name: "Checkout Idempotente",
+        actor: "Cliente → Next.js → POST /orders",
+        summary: "El usuario aplica su cupón (ej. BIENVENIDO10) y confirma su dirección. El frontend envía POST /orders con cabecera Idempotency-Key.",
+        logic: [
+          "Redis ejecuta SETNX sobre idem:order:{userId}:{key} para bloquear dobles clics concurrentes.",
+          "Se valida el cupón promocional y se calcula el desglose fiscal DIAN (Base gravable + IVA 19%)."
+        ],
+        sqlOrCode: `POST /api/orders
+Headers: { "Idempotency-Key": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d" }`
+      },
+      {
+        num: "PASO 02",
+        name: "Reserva FOR UPDATE (15m)",
+        actor: "NestJS → PostgreSQL RPC",
+        summary: "Antes de cobrar en Stripe, la base de datos bloquea físicamente las prendas seleccionadas durante 15 minutos.",
+        logic: [
+          "La RPC reserve_variant_stock ejecuta SELECT ... FOR UPDATE sobre product_variants.",
+          "Descuenta las reservas activas de otros compradores y crea registros ACTIVE en stock_reservations con expires_at = now() + 15 min."
+        ],
+        sqlOrCode: `RPC: reserve_variant_stock(p_order_id, p_user_id, p_items, 15)
+Estado de orden -> PENDING_PAYMENT`
+      },
+      {
+        num: "PASO 03",
+        name: "Pago Stripe & Webhook HMAC",
+        actor: "Navegador → Stripe Elements → Webhook",
+        summary: "El cliente paga con tarjeta bajo 3D Secure 2.0. Stripe notifica al backend mediante un webhook firmado.",
+        logic: [
+          "El navegador envía el PAN/CVC directo a Stripe (cumplimiento PCI-DSS Nivel 1).",
+          "POST /payments/webhook verifica la firma HMAC-SHA256 y procesa payment_intent.succeeded."
+        ],
+        sqlOrCode: `stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
+Evento: payment_intent.succeeded`
+      },
+      {
+        num: "PASO 04",
+        name: "Confirmación & Ruteo Haversine",
+        actor: "Webhook → PostgreSQL RPCs → BullMQ",
+        summary: "Se descuenta el stock definitivo, la orden pasa a PAID y se asigna automáticamente al domiciliario óptimo.",
+        logic: [
+          "confirm_order_reservation consume la reserva y descuenta product_variants.stock.",
+          "assign_delivery busca domiciliario en la misma ciudad (menor carga) o en el mismo departamento calculando kilómetros extra con la fórmula Haversine."
+        ],
+        sqlOrCode: `RPC: confirm_order_reservation(orderId) -> 'CONFIRMED'
+RPC: assign_delivery(orderId) -> 'ASSIGNED' | 'REASSIGNED_DEPT'`
+      },
+      {
+        num: "PASO 05",
+        name: "Emisión de QR Criptográfico",
+        actor: "Cliente → GET /orders/:id/qr",
+        summary: "El comprador abre su código QR dinámico o PIN de 4 dígitos desde su celular para recibir el paquete.",
+        logic: [
+          "QrService firma un token JWT-lite con HMAC-SHA256 que incluye orderId, exp y un identificador único jti.",
+          "También deriva un código numérico determinista de 4 dígitos protegido contra fuerza bruta en Redis."
+        ],
+        sqlOrCode: `Payload QR: { sub: orderId, jti: uuid, exp: timestamp }
+Firma: HMAC-SHA256(payload, QR_SECRET)`
+      },
+      {
+        num: "PASO 06",
+        name: "Escaneo en Puerta & Liquidación",
+        actor: "Repartidor → POST /delivery/scan-qr",
+        summary: "El domiciliario escanea el QR del cliente en puerta, sella la entrega como DELIVERED y recibe su bono.",
+        logic: [
+          "consume_order_qr_jti marca qr_consumed_at de forma atómica e impide reusar el QR.",
+          "Al confirmar entrega, el trigger de base de datos acredita automáticamente el bono por kilometraje extra al repartidor."
+        ],
+        sqlOrCode: `RPC: consume_order_qr_jti(orderId, jti)
+Estado de orden -> DELIVERED (delivered_at = now())`
+      },
+      {
+        num: "PASO 07",
+        name: "Comprobante 1-Pág & Postventa Ley 1480",
+        actor: "Cliente / Admin → Comprobante & RMA",
+        summary: "El cliente descarga su comprobante limpio de 1 página y cuenta con 5 días hábiles para retracto o cambio de talla.",
+        logic: [
+          "El botón 'Descargar comprobante' genera un documento A4 de 1 página con Estado, Fecha, Receptor, Dirección y Producto Entregado.",
+          "Si solicita retracto dentro de los 5 días hábiles (Ley 1480 Art. 47) y el Admin lo aprueba, se dispara el reembolso en Stripe y se repone el stock."
+        ],
+        sqlOrCode: `POST /orders/:id/returns { type: "RETRACT_REFUND" | "SIZE_EXCHANGE" }
+Admin Resolve -> stripe.refunds.create() + restore_order_stock`
+      }
+    ];
+
+    /* ─────────────────── MATRIZ DE DECISIONES TÉCNICAS ─────────────────── */
+    const DECISIONS = [
+      {
+        cat: "Concurrencia & Base de Datos",
+        title: "Bloqueo Pesimista (FOR UPDATE) vs. Sobreventa",
+        body: "En lanzamientos de moda limitada (Drops), múltiples usuarios intentan comprar la última talla al mismo tiempo. En lugar de descontar stock solo cuando el pago termina, bloqueamos la fila de la variante con SELECT ... FOR UPDATE al iniciar el checkout y creamos una reserva con TTL de 15 minutos.",
+        why: "Impacto: Cero sobreventa garantizada a nivel de motor PostgreSQL, liberando automáticamente el stock si el usuario abandona la pestaña."
+      },
+      {
+        cat: "Resiliencia Financiera",
+        title: "Rescate o Auto-Reembolso en Pagos Tardíos de Stripe",
+        body: "Si un usuario tarda más de 15 minutos en completar 3D Secure y su reserva ya expiró cuando llega el webhook payment_intent.succeeded, confirm_order_reservation verifica si aún queda stock físico libre. Si otra persona compró la última prenda, el sistema emite un reembolso inmediato en Stripe.",
+        why: "Impacto: Ningún cliente pierde su dinero ni queda con un cobro huérfano sin inventario respaldado."
+      },
+      {
+        cat: "Sistemas Distribuidos",
+        title: "Idempotencia Estricta en Checkout y Colas BullMQ",
+        body: "El endpoint POST /orders exige Idempotency-Key respaldada por SETNX en Redis. Asimismo, cada correo en BullMQ usa un jobId determinista (ej. order-paid-{id}).",
+        why: "Impacto: Reintentos de red o webhooks repetidos de Stripe jamás duplican órdenes, cobros ni correos electrónicos."
+      },
+      {
+        cat: "Logística & Geolocalización",
+        title: "Asignación Multicapa con Fórmula Haversine",
+        body: "Cuando un pedido pasa a PAID, assign_delivery busca primero un repartidor en la misma ciudad con menor carga activa (FOR UPDATE SKIP LOCKED). Si no hay en la ciudad, busca en el mismo departamento calculando la distancia en línea recta con la fórmula trigonométrica Haversine.",
+        why: "Impacto: Cobertura regional automática con cálculo transparente de bonos por kilómetro extra (tope de 80 km)."
+      },
+      {
+        cat: "Seguridad en Última Milla",
+        title: "Prueba Criptográfica de Entrega (QR JWT-lite + PIN 4 Dígitos)",
+        body: "Un domiciliario tiene prohibido por código marcar un pedido como DELIVERED directamente. Debe escanear el código QR firmado con HMAC-SHA256 del cliente (consumiendo su jti único) o ingresar el código de 4 dígitos.",
+        why: "Impacto: Elimina entregas falsas. Si entrega en portería usando su PIN personal scrypt, el cliente tiene 48h para confirmar o abrir disputa."
+      },
+      {
+        cat: "Experiencia de Usuario & Impresión",
+        title: "Comprobante de Pedido Aislado (1 Página) y Paginación",
+        body: "El comprobante de pedido no imprime una captura de la interfaz web: genera un documento estructurado A4 con Estado del pedido, Fecha de creación, Receptor, Dirección y Producto entregado. Además, el historial en /cuenta pagina cada 10 pedidos.",
+        why: "Impacto: Lectura inmediata en una sola página sin ruido visual y navegación rápida en cuentas con alto volumen de compras."
+      },
+      {
+        cat: "Algoritmos & Búsqueda",
+        title: "Motor de Búsqueda Aislado con Jerga Colombiana",
+        body: "Implementamos un índice invertido en memoria con normalización Unicode NFD, distancia de edición Levenshtein <= 2 y diccionario de sinónimos colombianos ('camibuso', 'chompa', 'tenis', 'jean').",
+        why: "Impacto: Búsquedas instantáneas tolerantes a errores ortográficos y adaptadas al vocabulario real del comprador en Colombia."
+      },
+      {
+        cat: "Cumplimiento Legal Colombiano",
+        title: "Estatuto del Consumidor (Ley 1480) y Desglose DIAN (IVA 19%)",
+        body: "El sistema calcula días hábiles reales desde la fecha de entrega para habilitar el Derecho de Retracto (5 días hábiles) y Garantía (30 días), además de discriminar la base gravable sin IVA y el impuesto del 19%.",
+        why: "Impacto: Operación 100% alineada con la normativa de la Superintendencia de Industria y Comercio (SIC) y la DIAN."
+      }
+    ];
+
+    /* ─────────────────── FUNCIONES INTERACTIVAS ─────────────────── */
+    function selectNode(nodeId) {
+      const data = NODES[nodeId];
+      if (!data) return;
+
+      document.querySelectorAll(".arch-node").forEach((el) => {
+        const id = el.getAttribute("data-id");
+        el.classList.remove("selected", "connected", "dimmed");
+        if (id === nodeId) {
+          el.classList.add("selected");
+        } else if (data.connections.includes(id)) {
+          el.classList.add("connected");
+        }
+      });
+
+      const inspector = document.getElementById("node-inspector");
+      const connButtons = data.connections
+        .map((cid) => {
+          const target = NODES[cid];
+          return `<button class="conn-tag" onclick="selectNode('${cid}')">→ ${target ? target.title : cid}</button>`;
+        })
+        .join("");
+
+      inspector.innerHTML = `
+        <span class="inspector-kicker">${data.kicker}</span>
+        <h3 class="inspector-title">${data.title}</h3>
+        <div class="inspector-stack">${data.stack}</div>
+        <p class="inspector-desc">${data.desc}</p>
+
+        <div class="inspector-section">
+          <h4>Decisiones Técnicas y Lógicas</h4>
+          <ul class="inspector-list">
+            ${data.decisions.map((d) => `<li>${d}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div class="inspector-section">
+          <h4>Contrato / Implementación Clave</h4>
+          <pre class="code-snippet">${data.code}</pre>
+        </div>
+
+        <div class="inspector-section">
+          <h4>Nodos Conectados (Clic para inspeccionar)</h4>
+          <div class="connected-tags">${connButtons}</div>
+        </div>
+      `;
+    }
+
+    function filterLayer(layer, btn) {
+      document.querySelectorAll(".layer-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      document.querySelectorAll(".arch-node").forEach((el) => {
+        const nodeLayer = el.getAttribute("data-layer");
+        if (layer === "ALL" || nodeLayer === layer) {
+          el.classList.remove("dimmed");
+        } else {
+          el.classList.add("dimmed");
+        }
+      });
+    }
+
+    function switchView(viewName, btn) {
+      document.querySelectorAll(".view-tab").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      document.querySelectorAll(".view-section").forEach((s) => s.classList.remove("active"));
+      document.getElementById(`view-${viewName}`).classList.add("active");
+    }
+
+    function selectFlowStep(idx) {
+      const step = FLOW_STEPS[idx];
+      document.querySelectorAll(".step-btn").forEach((b, i) => {
+        b.classList.toggle("active", i === idx);
+      });
+
+      document.getElementById("flow-step-content").innerHTML = `
+        <div>
+          <span class="inspector-kicker">${step.num} · ${step.actor}</span>
+          <h3 class="inspector-title" style="margin-top: 4px;">${step.name}</h3>
+          <p class="inspector-desc" style="margin-top: 8px;">${step.summary}</p>
+          <div class="inspector-section">
+            <h4>Garantías Lógicas en este Paso</h4>
+            <ul class="inspector-list">
+              ${step.logic.map((l) => `<li>${l}</li>`).join("")}
+            </ul>
+          </div>
+        </div>
+        <div>
+          <span class="inspector-kicker">Operación / RPC / Payload</span>
+          <pre class="code-snippet" style="margin-top: 10px;">${step.sqlOrCode}</pre>
+          <div style="margin-top: 16px; display: flex; gap: 8px;">
+            <button class="layer-btn" ${idx === 0 ? "disabled" : ""} onclick="selectFlowStep(${idx - 1})">← Paso Anterior</button>
+            <button class="layer-btn active" ${idx === FLOW_STEPS.length - 1 ? "disabled" : ""} onclick="selectFlowStep(${idx + 1})">Siguiente Paso →</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDecisions(query = "") {
+      const q = query.trim().toLowerCase();
+      const filtered = DECISIONS.filter(
+        (d) =>
+          !q ||
+          d.title.toLowerCase().includes(q) ||
+          d.cat.toLowerCase().includes(q) ||
+          d.body.toLowerCase().includes(q) ||
+          d.why.toLowerCase().includes(q)
+      );
+
+      document.getElementById("decisions-container").innerHTML = filtered
+        .map(
+          (d) => `
+        <article class="decision-card">
+          <span class="decision-cat">${d.cat}</span>
+          <h3 class="decision-title">${d.title}</h3>
+          <p class="decision-body">${d.body}</p>
+          <p class="decision-why"><strong>Resultado:</strong> ${d.why}</p>
+        </article>
+      `
+        )
+        .join("");
+    }
+
+    // Inicialización
+    document.getElementById("flow-step-buttons").innerHTML = FLOW_STEPS.map(
+      (s, i) => `
+        <button class="step-btn ${i === 0 ? "active" : ""}" onclick="selectFlowStep(${i})">
+          <span class="step-num">${s.num}</span>
+          <span class="step-name">${s.name}</span>
+        </button>
+      `
+    ).join("");
+
+    selectNode("next-store");
+    selectFlowStep(0);
+    renderDecisions("");
+  </script>
+</body>
+</html>

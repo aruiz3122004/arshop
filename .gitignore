@@ -1,0 +1,33 @@
+node_modules
+.next
+.turbo
+dist
+build
+*.tsbuildinfo
+
+# ───── Secrets ─────
+.env
+.env.local
+.env.*.local
+backend/.env
+backend/.env.*
+apps/web/.env
+apps/web/.env.*
+!**/.env.example
+
+# ───── Logs & cache ─────
+*.log
+.vercel
+.cache
+coverage
+
+# ───── OS / editor ─────
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+
+.playwright-mcp/
+
+fixes/
