@@ -56,7 +56,10 @@ import { RedisModule } from "./redis/redis.module";
           tls: cfg.get<boolean>("REDIS_TLS") ? {} : undefined,
           connectTimeout: 2000,
           enableReadyCheck: false,
-          enableOfflineQueue: false,
+          // BullMQ necesita la cola offline activa: si Redis tarda en estar
+          // disponible (arranque en Render, reinicios, red), sus comandos
+          // deben esperar en vez de lanzar
+          // "Stream isn't writeable and enableOfflineQueue options is false".
           retryStrategy: (times: number) => Math.min(times * 2000, 15000),
         },
       }),
